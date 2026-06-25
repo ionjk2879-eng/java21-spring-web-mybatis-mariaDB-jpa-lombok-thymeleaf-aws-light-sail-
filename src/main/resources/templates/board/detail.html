@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${board.title}">게시글 상세</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav th:replace="~{layout/header :: header}"></nav>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="mb-3" th:text="${board.title}"></h2>
+
+            <div class="d-flex justify-content-between text-muted mb-3">
+                <div>
+                    <span th:text="${board.member.nickname}"></span> |
+                    <span th:text="${#temporals.format(board.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+                </div>
+                <span>조회 <span th:text="${board.viewCount}"></span></span>
+            </div>
+
+            <hr>
+
+            <div class="mb-4" style="min-height: 300px; white-space: pre-wrap;" th:text="${board.content}"></div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between">
+                <a th:href="@{/board/list}" class="btn btn-secondary">목록</a>
+                <div th:if="${session.loginMember != null and session.loginMember.id == board.member.id}">
+                    <a th:href="@{/board/edit/{id}(id=${board.id})}" class="btn btn-warning me-2">수정</a>
+                    <form th:action="@{/board/delete/{id}(id=${board.id})}" method="post" style="display: inline;"
+                          onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                        <button type="submit" class="btn btn-danger">삭제</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 댓글 영역 -->
+            <div class="mt-5">
+                <h5>댓글 <span th:text="${comments.size()}"></span>개</h5>
+                <hr>
+
+                <div th:each="comment : ${comments}" class="mb-3 p-3 bg-light rounded">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong th:text="${comment.member.nickname}"></strong>
+                            <small class="text-muted ms-2" th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></small>
+                        </div>
+                        <div th:if="${session.loginMember != null and session.loginMember.id == comment.member.id}">
+                            <button type="button" class="btn btn-sm btn-outline-warning me-1"
+                                    th:onclick="'toggleEditComment(' + ${comment.id} + ')'">수정</button>
+                            <form th:action="@{/comment/delete/{id}(id=${comment.id})}" method="post"
+                                  style="display: inline;" onsubmit="return confirm('댓글을 삭제하시겠습니까?');">
+                                <input type="hidden" name="boardId" th:value="${board.id}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
+                            </form>
+                        </div>
+                    </div>
+                    <p class="mt-2 mb-0" style="white-space: pre-wrap;" th:id="'comment-content-' + ${comment.id}" th:text="${comment.content}"></p>
+                    <form th:id="'comment-edit-form-' + ${comment.id}" style="display: none;"
+                          th:action="@{/comment/edit/{id}(id=${comment.id})}" method="post" class="mt-2">
+                        <input type="hidden" name="boardId" th:value="${board.id}">
+                        <textarea name="content" class="form-control mb-2" rows="3" th:text="${comment.content}"></textarea>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-sm btn-secondary me-1"
+                                    th:onclick="'toggleEditComment(' + ${comment.id} + ')'">취소</button>
+                            <button type="submit" class="btn btn-sm btn-primary">수정 완료</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div th:if="${#lists.isEmpty(comments)}" class="text-center text-muted py-3">
+                    댓글이 없습니다.
+                </div>
+
+                <!-- 댓글 작성 -->
+                <div th:if="${session.loginMember != null}" class="mt-4">
+                    <form th:action="@{/comment/write}" method="post">
+                        <input type="hidden" name="boardId" th:value="${board.id}">
+                        <div class="mb-2">
+                            <textarea name="content" class="form-control" rows="3" placeholder="댓글을 입력하세요" required></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary btn-sm">댓글 등록</button>
+                        </div>
+                    </form>
+                </div>
+                <div th:if="${session.loginMember == null}" class="text-center text-muted py-3">
+                    <a th:href="@{/member/login}">로그인</a> 후 댓글을 작성할 수 있습니다.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleEditComment(commentId) {
+    var content = document.getElementById('comment-content-' + commentId);
+    var form = document.getElementById('comment-edit-form-' + commentId);
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        content.style.display = 'none';
+    } else {
+        form.style.display = 'none';
+        content.style.display = 'block';
+    }
+}
+</script>
+</body>
+</html>

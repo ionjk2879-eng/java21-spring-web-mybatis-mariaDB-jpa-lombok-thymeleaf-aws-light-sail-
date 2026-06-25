@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.exam0625.mapper.BoardMapper">
+
+    <resultMap id="boardWithMember" type="Board" autoMapping="true">
+        <id property="id" column="id"/>
+        <association property="member" javaType="Member">
+            <id property="id" column="member_id"/>
+            <result property="nickname" column="member_nickname"/>
+        </association>
+    </resultMap>
+
+    <select id="searchBoards" resultMap="boardWithMember">
+        SELECT b.*, m.nickname AS member_nickname
+        FROM board b
+        JOIN member m ON b.member_id = m.id
+        <where>
+            <if test="search.keyword != null and search.keyword != ''">
+                <choose>
+                    <when test="search.searchType == 'title'">
+                        AND b.title LIKE CONCAT('%', #{search.keyword}, '%')
+                    </when>
+                    <when test="search.searchType == 'content'">
+                        AND b.content LIKE CONCAT('%', #{search.keyword}, '%')
+                    </when>
+                    <when test="search.searchType == 'writer'">
+                        AND m.nickname LIKE CONCAT('%', #{search.keyword}, '%')
+                    </when>
+                    <otherwise>
+                        AND (b.title LIKE CONCAT('%', #{search.keyword}, '%')
+                        OR b.content LIKE CONCAT('%', #{search.keyword}, '%'))
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+        ORDER BY b.created_at DESC
+        LIMIT #{search.size} OFFSET #{search.offset}
+    </select>
+
+    <select id="countSearchBoards" resultType="int">
+        SELECT COUNT(*)
+        FROM board b
+        JOIN member m ON b.member_id = m.id
+        <where>
+            <if test="search.keyword != null and search.keyword != ''">
+                <choose>
+                    <when test="search.searchType == 'title'">
+                        AND b.title LIKE CONCAT('%', #{search.keyword}, '%')
+                    </when>
+                    <when test="search.searchType == 'content'">
+                        AND b.content LIKE CONCAT('%', #{search.keyword}, '%')
+                    </when>
+                    <when test="search.searchType == 'writer'">
+                        AND m.nickname LIKE CONCAT('%', #{search.keyword}, '%')
+                    </when>
+                    <otherwise>
+                        AND (b.title LIKE CONCAT('%', #{search.keyword}, '%')
+                        OR b.content LIKE CONCAT('%', #{search.keyword}, '%'))
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </select>
+
+</mapper>

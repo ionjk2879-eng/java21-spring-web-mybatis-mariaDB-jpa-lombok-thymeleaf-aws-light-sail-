@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이페이지</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav th:replace="~{layout/header :: header}"></nav>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="mb-4">마이페이지</h2>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>아이디</strong>
+                        <p th:text="${member.username}"></p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>닉네임</strong>
+                        <p th:text="${member.nickname}"></p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>이메일</strong>
+                        <p th:text="${member.email}"></p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>가입일</strong>
+                        <p th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd HH:mm')}"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <a th:href="@{/board/my}" class="btn btn-primary me-2">내가 작성한 게시글</a>
+                <a th:href="@{/}" class="btn btn-secondary">홈으로</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
