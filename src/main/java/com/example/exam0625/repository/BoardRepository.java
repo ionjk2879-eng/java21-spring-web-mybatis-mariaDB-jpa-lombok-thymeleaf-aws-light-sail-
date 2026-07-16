@@ -9,7 +9,13 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface BoardRepository extends JpaRepository<Board, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"member"})
+    Optional<Board> findById(Long id);
 
     @Override
     @EntityGraph(attributePaths = {"member"})
