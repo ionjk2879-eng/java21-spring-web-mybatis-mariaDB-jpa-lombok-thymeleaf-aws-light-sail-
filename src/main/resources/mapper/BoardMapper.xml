@@ -64,4 +64,57 @@
         </where>
     </select>
 
+
+    <!-- ===================== DDL ===================== -->
+
+    <!-- CREATE -->
+    <update id="createBoardTable">
+        CREATE TABLE IF NOT EXISTS board (
+            id          BIGINT       NOT NULL AUTO_INCREMENT,
+            title       VARCHAR(100) NOT NULL,
+            content     TEXT         NOT NULL,
+            view_count  INT          NOT NULL DEFAULT 0,
+            member_id   BIGINT       NOT NULL,
+            created_at  DATETIME(6),
+            updated_at  DATETIME(6),
+            PRIMARY KEY (id),
+            CONSTRAINT FK_board_member FOREIGN KEY (member_id) REFERENCES member (id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    </update>
+
+    <!-- ALTER -->
+    <update id="addViewCountIndex">
+        ALTER TABLE board ADD INDEX IF NOT EXISTS idx_board_view_count (view_count)
+    </update>
+
+    <!-- DROP -->
+    <update id="dropBoardTable">
+        DROP TABLE IF EXISTS board
+    </update>
+
+    <!-- ============= 데이터사전 조회 ============= -->
+
+    <!-- 인덱스 목록 조회 -->
+    <select id="getIndexList" resultType="java.util.Map">
+        SELECT
+            TABLE_NAME      AS tableName,
+            INDEX_NAME      AS indexName,
+            COLUMN_NAME     AS columnName,
+            NON_UNIQUE      AS nonUnique,
+            SEQ_IN_INDEX    AS seqInIndex
+        FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = 'exam_board'
+        ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX
+    </select>
+
+    <!-- 뷰 목록 조회 -->
+    <select id="getViewList" resultType="java.util.Map">
+        SELECT
+            TABLE_NAME      AS viewName,
+            VIEW_DEFINITION AS viewDefinition,
+            IS_UPDATABLE    AS isUpdatable
+        FROM information_schema.VIEWS
+        WHERE TABLE_SCHEMA = 'exam_board'
+    </select>
+
 </mapper>
