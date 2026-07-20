@@ -13,6 +13,10 @@ import java.util.Optional;
 
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
+    @EntityGraph(attributePaths = {"member"})
+    @Query("SELECT b FROM Board b WHERE b.id = :id")
+    Optional<Board> findWithMemberById(@Param("id") Long id);
+
     @Override
     @EntityGraph(attributePaths = {"member"})
     Optional<Board> findById(Long id);

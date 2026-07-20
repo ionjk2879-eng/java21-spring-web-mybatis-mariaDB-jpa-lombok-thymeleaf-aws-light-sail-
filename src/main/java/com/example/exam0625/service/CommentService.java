@@ -21,7 +21,7 @@ public class CommentService {
     private final BoardRepository boardRepository;
 
     @Transactional
-    public void write(CommentWriteDto dto, Member member) {
+    public Comment write(CommentWriteDto dto, Member member) {
         Board board = boardRepository.findById(dto.getBoardId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
 
@@ -31,7 +31,7 @@ public class CommentService {
                 .member(member)
                 .build();
 
-        commentRepository.save(comment);
+        return commentRepository.save(comment);
     }
 
     public List<Comment> findByBoardId(Long boardId) {

@@ -33,7 +33,7 @@ public class BoardService {
     }
 
     public Board findById(Long id) {
-        return boardRepository.findById(id)
+        return boardRepository.findWithMemberById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
     }
 

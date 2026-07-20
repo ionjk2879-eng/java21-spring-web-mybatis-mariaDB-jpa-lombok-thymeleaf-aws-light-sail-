@@ -41,53 +41,55 @@
 
             <!-- 댓글 영역 -->
             <div class="mt-5">
-                <h5>댓글 <span th:text="${comments.size()}"></span>개</h5>
+                <h5>댓글 <span id="comment-count" th:text="${comments.size()}"></span>개</h5>
                 <hr>
 
-                <div th:each="comment : ${comments}" class="mb-3 p-3 bg-light rounded">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <strong th:text="${comment.member.nickname}"></strong>
-                            <small class="text-muted ms-2" th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></small>
+                <div id="comment-list">
+                    <div th:each="comment : ${comments}"
+                         th:id="'comment-' + ${comment.id}"
+                         class="mb-3 p-3 bg-light rounded">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong th:text="${comment.member.nickname}"></strong>
+                                <small class="text-muted ms-2"
+                                       th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></small>
+                            </div>
+                            <div th:if="${session.loginMember != null and session.loginMember.id == comment.member.id}">
+                                <button class="btn btn-sm btn-outline-warning me-1"
+                                        th:onclick="'showEditForm(' + ${comment.id} + ')'">수정</button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        th:onclick="'deleteComment(' + ${comment.id} + ')'">삭제</button>
+                            </div>
                         </div>
-                        <div th:if="${session.loginMember != null and session.loginMember.id == comment.member.id}">
-                            <button type="button" class="btn btn-sm btn-outline-warning me-1"
-                                    th:onclick="'toggleEditComment(' + ${comment.id} + ')'">수정</button>
-                            <form th:action="@{/comment/delete/{id}(id=${comment.id})}" method="post"
-                                  style="display: inline;" onsubmit="return confirm('댓글을 삭제하시겠습니까?');">
-                                <input type="hidden" name="boardId" th:value="${board.id}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
-                            </form>
+                        <p th:id="'comment-text-' + ${comment.id}"
+                           class="mt-2 mb-0" style="white-space: pre-wrap;"
+                           th:text="${comment.content}"></p>
+                        <div th:id="'comment-edit-' + ${comment.id}" style="display:none;" class="mt-2">
+                            <textarea th:id="'edit-input-' + ${comment.id}"
+                                      class="form-control mb-2" rows="3"
+                                      th:text="${comment.content}"></textarea>
+                            <div class="text-end">
+                                <button class="btn btn-sm btn-secondary me-1"
+                                        th:onclick="'cancelEdit(' + ${comment.id} + ')'">취소</button>
+                                <button class="btn btn-sm btn-primary"
+                                        th:onclick="'saveEdit(' + ${comment.id} + ')'">수정 완료</button>
+                            </div>
                         </div>
                     </div>
-                    <p class="mt-2 mb-0" style="white-space: pre-wrap;" th:id="'comment-content-' + ${comment.id}" th:text="${comment.content}"></p>
-                    <form th:id="'comment-edit-form-' + ${comment.id}" style="display: none;"
-                          th:action="@{/comment/edit/{id}(id=${comment.id})}" method="post" class="mt-2">
-                        <input type="hidden" name="boardId" th:value="${board.id}">
-                        <textarea name="content" class="form-control mb-2" rows="3" th:text="${comment.content}"></textarea>
-                        <div class="text-end">
-                            <button type="button" class="btn btn-sm btn-secondary me-1"
-                                    th:onclick="'toggleEditComment(' + ${comment.id} + ')'">취소</button>
-                            <button type="submit" class="btn btn-sm btn-primary">수정 완료</button>
-                        </div>
-                    </form>
-                </div>
 
-                <div th:if="${#lists.isEmpty(comments)}" class="text-center text-muted py-3">
-                    댓글이 없습니다.
+                    <div id="no-comments" th:if="${#lists.isEmpty(comments)}"
+                         class="text-center text-muted py-3">
+                        첫 번째 댓글을 작성해보세요.
+                    </div>
                 </div>
 
                 <!-- 댓글 작성 -->
                 <div th:if="${session.loginMember != null}" class="mt-4">
-                    <form th:action="@{/comment/write}" method="post">
-                        <input type="hidden" name="boardId" th:value="${board.id}">
-                        <div class="mb-2">
-                            <textarea name="content" class="form-control" rows="3" placeholder="댓글을 입력하세요" required></textarea>
-                        </div>
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-primary btn-sm">댓글 등록</button>
-                        </div>
-                    </form>
+                    <textarea id="comment-input" class="form-control mb-2" rows="3"
+                              placeholder="댓글을 입력하세요"></textarea>
+                    <div class="text-end">
+                        <button class="btn btn-primary btn-sm" onclick="addComment()">댓글 등록</button>
+                    </div>
                 </div>
                 <div th:if="${session.loginMember == null}" class="text-center text-muted py-3">
                     <a th:href="@{/member/login}">로그인</a> 후 댓글을 작성할 수 있습니다.
@@ -97,18 +99,120 @@
     </div>
 </div>
 
-<script>
-function toggleEditComment(commentId) {
-    var content = document.getElementById('comment-content-' + commentId);
-    var form = document.getElementById('comment-edit-form-' + commentId);
-    if (form.style.display === 'none') {
-        form.style.display = 'block';
-        content.style.display = 'none';
-    } else {
-        form.style.display = 'none';
-        content.style.display = 'block';
+<script th:inline="javascript">
+    const boardId = [[${board.id}]];
+    const loginMemberId = [[${session.loginMember != null ? session.loginMember.id : null}]];
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(String(str)));
+        return div.innerHTML;
     }
-}
+
+    function updateCommentCount(delta) {
+        const el = document.getElementById('comment-count');
+        el.textContent = parseInt(el.textContent) + delta;
+    }
+
+    function showEditForm(id) {
+        document.getElementById('comment-text-' + id).style.display = 'none';
+        document.getElementById('comment-edit-' + id).style.display = 'block';
+    }
+
+    function cancelEdit(id) {
+        document.getElementById('comment-text-' + id).style.display = 'block';
+        document.getElementById('comment-edit-' + id).style.display = 'none';
+    }
+
+    async function saveEdit(id) {
+        const content = document.getElementById('edit-input-' + id).value.trim();
+        if (!content) return;
+
+        const res = await fetch(`/api/comment/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({content})
+        });
+
+        if (res.ok) {
+            document.getElementById('comment-text-' + id).textContent = content;
+            document.getElementById('edit-input-' + id).value = content;
+            cancelEdit(id);
+        } else {
+            alert(await res.text());
+        }
+    }
+
+    async function deleteComment(id) {
+        if (!confirm('댓글을 삭제하시겠습니까?')) return;
+
+        const res = await fetch(`/api/comment/${id}`, {method: 'DELETE'});
+
+        if (res.ok) {
+            document.getElementById('comment-' + id).remove();
+            updateCommentCount(-1);
+        } else {
+            alert(await res.text());
+        }
+    }
+
+    async function addComment() {
+        const textarea = document.getElementById('comment-input');
+        const content = textarea.value.trim();
+        if (!content) return;
+
+        const res = await fetch('/api/comment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({boardId, content})
+        });
+
+        if (res.ok) {
+            const comment = await res.json();
+            appendComment(comment);
+            textarea.value = '';
+            updateCommentCount(1);
+        } else {
+            alert(await res.text());
+        }
+    }
+
+    function appendComment(comment) {
+        const noComments = document.getElementById('no-comments');
+        if (noComments) noComments.remove();
+
+        const isOwner = loginMemberId !== null && loginMemberId === comment.memberId;
+
+        const div = document.createElement('div');
+        div.id = 'comment-' + comment.id;
+        div.className = 'mb-3 p-3 bg-light rounded';
+        div.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong>${escapeHtml(comment.nickname)}</strong>
+                    <small class="text-muted ms-2">${escapeHtml(comment.createdAt)}</small>
+                </div>
+                ${isOwner ? `
+                <div>
+                    <button class="btn btn-sm btn-outline-warning me-1" onclick="showEditForm(${comment.id})">수정</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${comment.id})">삭제</button>
+                </div>` : ''}
+            </div>
+            <p id="comment-text-${comment.id}" class="mt-2 mb-0" style="white-space: pre-wrap;"></p>
+            <div id="comment-edit-${comment.id}" style="display:none;" class="mt-2">
+                <textarea id="edit-input-${comment.id}" class="form-control mb-2" rows="3"></textarea>
+                <div class="text-end">
+                    <button class="btn btn-sm btn-secondary me-1" onclick="cancelEdit(${comment.id})">취소</button>
+                    <button class="btn btn-sm btn-primary" onclick="saveEdit(${comment.id})">수정 완료</button>
+                </div>
+            </div>
+        `;
+
+        div.querySelector('#comment-text-' + comment.id).textContent = comment.content;
+        div.querySelector('#edit-input-' + comment.id).value = comment.content;
+
+        document.getElementById('comment-list').appendChild(div);
+    }
 </script>
 </body>
 </html>
